@@ -1,0 +1,279 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Record WAV</title>
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap');
+    body {
+      background: #141722;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Montserrat', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 100vw;
+      min-height: 100vh;
+    }
+    .chat-container {
+      background: #212335;
+      border-radius: 28px;
+      box-shadow: 0 4px 32px rgba(36,32,80,0.23), 0 1.5px 8px rgba(0,0,0,0.16);
+      width: 99%;
+      max-width: 410px;
+      min-height: 390px;
+      padding: 2.2em 1.2em 3.7em 1.2em;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow: visible;
+    }
+    .assistant-bubble {
+      background: linear-gradient(95deg, #26334d 60%, #373b5d 97%);
+      color: #f5f7fa;
+      padding: 1.2em 1.3em;
+      border-radius: 1.7em 1.6em 1.6em 0.9em;
+      font-size: 1.17em;
+      max-width: 93%;
+      margin-bottom: 1.7em;
+      box-shadow: 0 2.5px 14px rgba(80,100,190,0.07);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .transcript {
+      color: #bdc5ef;
+      font-size: 1em;
+      font-style: italic;
+      min-height: 1.8em;
+      margin-bottom: 0.8em;
+      text-align: center;
+      font-weight: 500;
+    }
+    /* Circling animation container */
+    .circle-anim {
+      pointer-events: none;
+      position: absolute;
+      left: 50%;
+      bottom: -1px;
+      transform: translateX(-50%);
+      width: 110px; height: 110px;
+      z-index: 2;
+      display: none;
+    }
+    .circle-anim.active {
+      display: block;
+    }
+    .dot {
+      position: absolute;
+      width: 15px; height: 15px;
+      border-radius: 50%;
+      background: linear-gradient(90deg,#53e0cb 0%, #fa656c 90%);
+      box-shadow: 0 0 16px 3px #53e0cb70;
+      opacity: 0.83;
+      transition: background 0.24s;
+    }
+    .mic-btn {
+      position: absolute;
+      left: 50%;
+      bottom: -33px;
+      transform: translateX(-50%);
+      background: linear-gradient(100deg, #3650d4 62%, #09bbef 108%);
+      border: none;
+      outline: none;
+      border-radius: 74px;
+      width: 66px;
+      height: 66px;
+      box-shadow: 0 5px 34px 0 rgba(0,187,216,0.21), 0 0.5px 2.5px #09bbef33;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 2.5em;
+      cursor: pointer;
+      transition: box-shadow 0.23s, background 0.19s, filter 0.17s;
+      z-index: 20;
+      filter: drop-shadow(0 0 10px #3650d4AA);
+    }
+    .mic-btn.recording {
+      background: linear-gradient(100deg, #fa656c 67%, #53e0cb 132%);
+      filter: drop-shadow(0 0 22px #fa656c99);
+      box-shadow: 0 0 0 0 #fa5b6760, 0 10px 28px 0 rgba(255,98,150,0.12);
+      animation: micpulse 1.22s infinite alternate;
+    }
+    @keyframes micpulse {
+      0% {box-shadow: 0 0 0 0 #fa5b6722;}
+      100% {box-shadow: 0 0 32px 15px #53e0cb2b;}
+    }
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 1.1em;
+      margin-top: 2.5em;
+    }
+    .secondary-btn {
+      background: #1c2136;
+      border: none;
+      color: #76a3ff;
+      padding: 0.64em 1.33em;
+      border-radius: 23px;
+      font-size: 1em;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 1px 6px rgba(40,40,150,0.09);
+      transition: background 0.19s, color 0.19s;
+    }
+    .secondary-btn:disabled {
+      color: #454e66;
+      cursor: not-allowed;
+      background: #1c2136;
+      box-shadow: none;
+    }
+    audio {
+      width: 92%;
+      min-width: 150px;
+      display: block;
+      margin: 2.1em auto 0.8em auto;
+      outline: none;
+      background: #181a27;
+      border-radius: 13px;
+      box-shadow: none;
+    }
+    @media (max-width: 500px) {
+      .chat-container { min-height: 320px; padding: 1.2em 0.1em 4.6em 0.1em;}
+      .assistant-bubble { font-size: 1em;}
+      .circle-anim { width: 74vw; max-width: 92vw;}
+    }
+  </style>
+</head>
+<body>
+     <div class="chat-container">
+    <div class="assistant-bubble">Shadow Agent</div>
+    <div class="transcript" id="transcript"></div>
+    <audio id="audioPlayback" controls style="display:none"></audio>
+    <div class="circle-anim" id="circleAnim"></div>
+    <!-- <button class="mic-btn" id="micBtn" title="Start Recording"> -->
+      <span  class="mic-btn" id="micBtn" title="Start Recording">
+        <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+          <ellipse cx="24" cy="22" rx="9" ry="13" fill="#f4f7fa" stroke="#53e0cb" stroke-width="3"/>
+          <rect x="19" y="31" width="10" height="8" rx="4" fill="#53e0cb"/>
+          <rect x="17" y="38" width="14" height="4" rx="2" fill="#fa656c"/>
+          <rect x="18" y="11" width="12" height="18" rx="6" fill="#53e0cb"/>
+          <rect x="20" y="6" width="8" height="10" rx="4" fill="#fa656c"/>
+        </svg>
+      </span>
+    <!-- </button> -->
+     <div>
+          <audio  id="player" controls style="display: none;">
+            <source src="data:audio/mp3;base64,{{b64}}" type="audio/mp3">
+        </audio>
+     </div>
+    <div class="controls">
+          
+      <button onclick="startRecording()" class="secondary-btn" >Start</button>
+      <button onclick="stopRecording()" class="secondary-btn" >Stop</button>
+       <!-- Add this to your HTML (hidden) -->
+
+
+    </div>
+    <div>
+        <br>
+        <button onclick="playAgentAudio()" class="secondary-btn">Play Agent Voice</button>
+        <button id="downloadBtn" onclick="downloadFile()" class="secondary-btn" style="display:none;">
+            Download File
+        </button>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/gh/mattdiamond/Recorderjs@master/dist/recorder.js"></script> 
+
+  <script>
+
+
+    let isRecording = false;
+    const transcript = document.getElementById('transcript');
+    const circleAnim = document.getElementById('circleAnim');
+
+    // Circling animation logic
+    let animReq, angle = 0, circling = false, dots = 7;
+    function renderCircling() {
+      circleAnim.innerHTML = "";
+      let r = 47;
+      for (let i=0; i<dots; ++i) {
+        let a = angle + (2*Math.PI/dots)*i;
+        let x = 55 + Math.cos(a)*(r-4);
+        let y = 55 + Math.sin(a)*(r-4);
+        let dot = document.createElement('div');
+        dot.className = "dot";
+        dot.style.left = `${x-7.5}px`;
+        dot.style.top = `${y-7.5}px`;
+        dot.style.background = `linear-gradient(90deg,${i%2===0?'#53e0cb':'#fa656c'} 0%, #9dbfff 100%)`;
+        circleAnim.appendChild(dot);
+      }
+    }
+    function startCircling() {
+      if (circling) return;
+      circling = true;
+      circleAnim.classList.add('active');
+      function anim() {
+        if (!circling) return;
+        angle += 0.045;
+        renderCircling();
+        animReq = requestAnimationFrame(anim);
+      }
+      anim();
+    }
+    function stopCircling() {
+      circling = false;
+      circleAnim.classList.remove('active');
+      cancelAnimationFrame(animReq);
+      circleAnim.innerHTML = "";
+    }
+
+    function playAgentAudio() {
+        const audio = document.getElementById('player');
+        audio.play().then(() => {
+            console.log("Audio playing");
+        }).catch(e => {
+            console.log("Audio play failed:", e);
+        });
+
+    audio.onended = () => {
+        fetch('/delete_audio', { method: 'POST' })
+        .then(res => {
+            if (!res.ok) {
+            throw new Error('Failed to delete audio');
+            }
+            // ✅ After deletion, redirect to index
+            window.location.href = "{{ url_for('index') }}";
+        })
+        .catch(err => {
+            console.error("❌ Error deleting audio:", err);
+            // Optional: still redirect even if deletion fails
+            window.location.href = "{{ url_for('index') }}";
+        });
+    };
+    }
+
+    async function checkFile() {
+        let res = await fetch("/check-file");
+        let exists = await res.text(); // plain text, not JSON
+        if (exists === "true") {
+            document.getElementById("downloadBtn").style.display = "inline-block";
+        }
+    }
+
+
+    function downloadFile() {
+        window.location.href = "/download-file";
+    }
+
+    // Run on page load
+    checkFile();
+
+  </script>
+</body>
+</html>
