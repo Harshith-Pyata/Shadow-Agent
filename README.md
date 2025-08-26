@@ -16,7 +16,6 @@ With the increasing reliance on computers for personal and professional use, the
 Additionally, current automation frameworks demand technical expertise and do not offer conversational, adaptive control.
 
 There exists a need for a system that:
-
 	Understands natural language commands.
 	Executes OS-level operations autonomously.
 	Operates securely from any global location.
